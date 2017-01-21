@@ -1,16 +1,25 @@
 import csv
-from pandas import read_csv
+import time
 import pymorphy2
+import pandas as pd
+from pandas import read_csv
 
 
-def get_csv(txt_input_file, csv_input_file):
+def get_training_csv(txt_input_file, csv_input_file):
     in_txt = csv.reader(open(txt_input_file, "r", encoding = 'utf-8'), delimiter = '\t')
     out_csv = csv.writer(open(csv_input_file, 'w', encoding = 'utf-8'))
     out_csv.writerow(["rubric", "title", "text"])
     out_csv.writerows(in_txt)
 
 
-def clear_text(csv_input_file):
+def get_test_csv(txt_input_file, csv_input_file):
+    in_txt = csv.reader(open(txt_input_file, "r", encoding='utf-8'), delimiter='\t')
+    out_csv = csv.writer(open(csv_input_file, 'w', encoding='utf-8'))
+    out_csv.writerow(["title", "text"])
+    out_csv.writerows(in_txt)
+
+
+def clean_text(csv_input_file):
     train = read_csv(csv_input_file, encoding = 'utf-8')
 
     # All text to lower case
@@ -18,37 +27,53 @@ def clear_text(csv_input_file):
     train.text = train.text.str.lower()
 
     # Cleaning text from useless characters
-    train.text = train.text.str.replace(u' - ?', u'-')
-    train.text = train.text.str.replace(u'[0-9]', '')
-    train.text = train.text.str.replace(u'- ', ' ')
-    train.text = train.text.str.replace(u' -', ' ')
-    train.text = train.text.str.replace(u'  *', ' ')
-    train.text = train.text.str.replace(u'. ', ' ')
-    train.text = train.text.str.replace(u'.', '')
-    train.text = train.text.str.replace(u', ', ' ')
-    train.text = train.text.str.replace(u',', '')
-    train.text = train.text.str.replace(u'! ', ' ')
-    train.text = train.text.str.replace(u'!', '')
-    train.text = train.text.str.replace(u'? ', ' ')
-    train.text = train.text.str.replace(u'?', '')
-    train.text = train.text.str.replace(u'/', '')
-    train.text = train.text.str.replace(u'(', '')
-    train.text = train.text.str.replace(u')', '')
-    train.text = train.text.str.replace(u'"', '')
-    train.text = train.text.str.replace(u'«', '')
-    train.text = train.text.str.replace(u'»', '')
+    train.title = train.title.str.replace(' - ', ' ')
+    train.title = train.title.str.replace('[0-9]', '')
+    train.title = train.title.str.replace('- ', ' ')
+    train.title = train.title.str.replace(' -', ' ')
+    train.title = train.title.str.replace(u' . ', ' ')
+    train.title = train.title.str.replace(u'.', ' ')
+    train.title = train.title.str.replace(',', ' ')
+    train.title = train.title.str.replace('!', ' ')
+    train.title = train.title.str.replace('/', ' ')
+    train.title = train.title.str.replace('(', ' ')
+    train.title = train.title.str.replace(')', ' ')
+    train.title = train.title.str.replace(':', ' ')
+    train.title = train.title.str.replace('"', ' ')
+    train.title = train.title.str.replace('«', ' ')
+    train.title = train.title.str.replace('»', ' ')
+    train.title = train.title.str.replace(u' +', ' ')
+    train.title = train.title.str.strip()
+    train.text = train.text.str.replace(' - ', ' ')
+    train.text = train.text.str.replace('[0-9]', '')
+    train.text = train.text.str.replace('- ', ' ')
+    train.text = train.text.str.replace(' -', ' ')
+    train.text = train.text.str.replace(u' . ', ' ')
+    train.text = train.text.str.replace(u'.', ' ')
+    train.text = train.text.str.replace(',', ' ')
+    train.text = train.text.str.replace('!', ' ')
+    train.text = train.text.str.replace('/', ' ')
+    train.text = train.text.str.replace('(', ' ')
+    train.text = train.text.str.replace(')', ' ')
+    train.text = train.text.str.replace(':', ' ')
+    train.text = train.text.str.replace('"', ' ')
+    train.text = train.text.str.replace('«', ' ')
+    train.text = train.text.str.replace('»', ' ')
+    train.text = train.text.str.replace(u' +', ' ')
+    train.text = train.text.str.strip()
 
     # Dropping 'title' column
-    train = train.drop(['title'], axis = 1)
+    # train = train.drop(['title'], axis = 1)
     print(train)
+    print('Text cleared!')
     return train
 
 
-def f_tokenizer(s):
-    morph = pymorphy2.MorphAnalyzer()
+def my_tokenizer(s, morph):
+    # morph = pymorphy2.MorphAnalyzer()
     t = s.split(' ')
     # print('t: ', t)
-    f = []
+    f = ''
     for j in t:
         # print('j: ', j)
         m = morph.parse(j.replace('.', ''))
@@ -56,9 +81,49 @@ def f_tokenizer(s):
             wrd = m[0]
             # print('wrd: ', wrd)
             if wrd.tag.POS not in ('NUMR', 'PREP', 'CONJ', 'PRCL', 'INTJ', 'NPRO', 'COMP', 'PRED'):
-                f.append(wrd.normal_form)
+                f = f + ' ' + str(wrd.normal_form)
     # print('f: ', f)
     return f
-#
 
-# def training():
+
+def tokenization(train, csv_train_file):
+    start = time.clock()
+    out_csv = csv.writer(open(csv_train_file, "w", encoding = 'utf-8'))
+    out_csv.writerow(["rubric", "tokens"])
+    morph = pymorphy2.MorphAnalyzer()
+    for i in range(60000):
+        # print(i)
+        y = train.iloc[i]['title']
+        z = train.iloc[i]['text']
+        if type(z) == str:
+            out_csv.writerow([train.iloc[i]['rubric'], my_tokenizer(y, morph) + my_tokenizer(z, morph)])
+        else:
+            out_csv.writerow([train.iloc[i]['rubric'], my_tokenizer(y, morph)])
+    # print(out_csv)
+    stop = time.clock()
+    print('Time of tokenization: ', stop - start, ' s')
+
+
+def tokenization_test(test, csv_test_file):
+    start = time.clock()
+    out_csv = csv.writer(open(csv_test_file, "w", encoding = 'utf-8'))
+    out_csv.writerow(["tag", "tokens"])
+    morph = pymorphy2.MorphAnalyzer()
+    for i in range(15000):
+        print(i)
+        y = test.iloc[i]['title']
+        z = test.iloc[i]['text']
+        if type(z) == str:
+            out_csv.writerow([[], my_tokenizer(y, morph) + my_tokenizer(z, morph)])
+        else:
+            out_csv.writerow([[], my_tokenizer(y, morph)])
+    # print(out_csv)
+    stop = time.clock()
+    print('Time of tokenization: ', stop - start, ' s')
+
+
+def get_output(test, result, output_file):
+    output = pd.DataFrame(data={"id": test["id"], "rubric": result})
+    out_txt = csv.writer(open(output_file, 'w', encoding = 'utf-8'), delimiter = '\t')
+    out_txt.writerow(output)
+
