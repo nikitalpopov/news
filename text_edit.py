@@ -20,10 +20,6 @@ def get_test_csv(txt_input_file, csv_input_file):
 def clean_text(csv_input_file):
     train = read_csv(csv_input_file, encoding = 'utf-8')
 
-    # All text to lower case
-    train.title = train.title.str.lower()
-    train.text = train.text.str.lower()
-
     # Cleaning text from useless characters
     train.title = train.title.str.replace(' - ', ' ')
     train.title = train.title.str.replace('[0-9]', ' ')
@@ -89,6 +85,10 @@ def clean_text(csv_input_file):
     train.text = train.text.str.replace('»', ' ')
     train.text = train.text.str.replace(u' +', ' ')
     train.text = train.text.str.strip()
+
+    # All text to lower case
+    train.title = train.title.str.lower()
+    train.text = train.text.str.lower()
 
     return train
 

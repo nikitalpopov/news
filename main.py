@@ -1,4 +1,7 @@
 import time
+from sklearn import metrics
+from sklearn.externals import joblib
+
 from news.text_edit import *
 
 txt_train_input_file = r"news_train.txt"
@@ -42,6 +45,7 @@ from sklearn.svm import LinearSVC
 start = time.clock()
 clf = LinearSVC().fit(trn, train.rubric)
 stop = time.clock()
+joblib.dump(clf, 'model.pkl')
 print('Time of model creation: ', stop - start, ' s')
 print('')
 
@@ -70,9 +74,13 @@ print('Time of vectorization: ', stop - start, ' s')
 print('')
 
 print('Predicting rubric for each test news...')
+clf = joblib.load('model.pkl')
 result = clf.predict(tst)
 print('')
 
 print('Outputting result...')
+
+# print(metrics.classification_report(tst.tag, result, target_names=tst.tag))
+# print(metrics.confusion_matrix(tst.tag, result))
 get_output(result, text_test_output_file)
 print("That's all!")
